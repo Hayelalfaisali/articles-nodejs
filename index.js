@@ -1,12 +1,31 @@
 import express from "express";
 import mongoose from "mongoose";
-import Article from "./models/Article.js";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
 
+app.use(
+  cors({
+    origin: ["http://192.168.20.181:5173", "http://192.168.20.115:8080"], // Allow multiple frontend origins
+  })
+);
+
 const uri =
   "mongodb+srv://root:root@myfirstnodejscluster.apxuijv.mongodb.net/myFirstNodeJsCluster?retryWrites=true&w=majority";
+
+// Define the Article schema
+const articleSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    author: { type: String },
+  },
+  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+);
+
+// Create the Article model
+const Article = mongoose.model("Article", articleSchema);
 
 // Connect to MongoDB with Mongoose
 mongoose
@@ -21,11 +40,11 @@ mongoose
 // Route to create a new article
 app.post("/articles", async (req, res) => {
   try {
-    const { title, body, numberOfLikes } = req.body;
+    const { title, content, author } = req.body;
     const newArticle = new Article({
       title,
-      body,
-      numberOfLikes,
+      content,
+      author,
     });
     await newArticle.save();
     res
@@ -36,7 +55,7 @@ app.post("/articles", async (req, res) => {
   }
 });
 
-app.get("/articles", async (req, res) => {
+app.get("/articles", async (_, res) => {
   try {
     const articles = await Article.find();
     res.status(200).json(articles);
@@ -56,6 +75,7 @@ app.get("/articles/:id", async (req, res) => {
     res.status(500).send("Error fetching article: " + error);
   }
 });
+
 app.put("/articles/:id", async (req, res) => {
   try {
     const article = await Article.findByIdAndUpdate(req.params.id, req.body, {
